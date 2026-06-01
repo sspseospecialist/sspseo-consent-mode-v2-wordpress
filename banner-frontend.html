@@ -1,0 +1,202 @@
+<script>
+// I. INITIALIZE DATALAYER AND CONSENT DEFAULT API (CRITICAL: MUST RUN BEFORE GTM LOAD)
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+
+function handleFontsBlocking(status) {
+    if (status === 'denied') {
+        document.querySelectorAll("link[href*='fonts.googleapis'], link[href*='fonts.gstatic']").forEach(function(el) {
+            el.setAttribute('data-blocked-href', el.href); el.removeAttribute('href');
+        });
+    } else if (status === 'granted') {
+        document.querySelectorAll("link[data-blocked-href]").forEach(function(el) {
+            el.setAttribute('href', el.getAttribute('data-blocked-href')); el.removeAttribute('data-blocked-href');
+        });
+    }
+}
+
+// Read current browser state
+const localSaved = localStorage.getItem('sspseo_privacy_consent');
+
+if (localSaved === null) {
+    // Advanced Consent Mode Default State (Strict Privacy Opt-out)
+    gtag('consent', 'default', {
+        'analytics_storage': 'denied',
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'wait_for_update': 500
+    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => handleFontsBlocking('denied'));
+    } else {
+        handleFontsBlocking('denied');
+    }
+} else {
+    // Restore User State Automatically
+    const consentObj = JSON.parse(localSaved);
+    gtag('consent', 'default', {
+        'analytics_storage': consentObj.analytics,
+        'ad_storage': consentObj.marketing,
+        'ad_user_data': consentObj.marketing,
+        'ad_personalization': consentObj.marketing
+    });
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => handleFontsBlocking(consentObj.personalization));
+    } else {
+        handleFontsBlocking(consentObj.personalization);
+    }
+}
+</script>
+
+<div id="sspseo-cookie-overlay" style="display: none;">
+    <div id="sspseo-cookie-banner">
+        <div class="cookie-container" style="position: relative;">
+            <button id="sspseo-cookie-close" onclick="submitFullConsent('denied')" title="Chiudi e rifiuta">&times;</button>
+            <div id="cookie-main-view">
+                <p class="cookie-title">Distinguersi per non confondersi, anche nella privacy.</p>
+                <p class="cookie-text">Utilizziamo cookie ed ecosistemi integrati per garantire performance ottimali, caricare i font di design e analizzare il traffico in ottica SEO.</p>
+                <div class="cookie-actions">
+                    <button class="btn-link" onclick="toggleCookieDetails()">Personalizza</button>
+                    <div class="btn-group">
+                        <button id="cookie-reject-all" class="btn-secondary" onclick="submitFullConsent('denied')">Rifiuta</button>
+                        <button id="cookie-accept-all" class="btn-primary" onclick="submitFullConsent('granted')">Accetta Tutti</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="cookie-details-view" style="display: none;">
+                <p class="cookie-title">Centro Preferenze Privacy</p>
+                <div class="cookie-panel">
+                    <div class="cookie-row"><div class="cookie-info"><span class="panel-label">Necessari</span><p class="panel-desc">Sempre attivi.</p></div><div class="cookie-toggle"><span class="status-always">✓</span></div></div>
+                    <div class="cookie-row"><div class="cookie-info"><span class="panel-label">Analitici</span><p class="panel-desc">Statistiche GA4.</p></div><div class="cookie-toggle"><label class="switch"><input type="checkbox" id="chk-analytics" checked><span class="slider"></span></label></div></div>
+                    <div class="cookie-row"><div class="cookie-info"><span class="panel-label">Marketing</span><p class="panel-desc">Google Ads tracking.</p></div><div class="cookie-toggle"><label class="switch"><input type="checkbox" id="chk-marketing"><span class="slider"></span></label></div></div>
+                    <div class="cookie-row"><div class="cookie-info"><span class="panel-label">Personalizzazione</span><p class="panel-desc">Google Fonts engine.</p></div><div class="cookie-toggle"><label class="switch"><input type="checkbox" id="chk-customization" checked><span class="slider"></span></label></div></div>
+                </div>
+                <div class="cookie-actions">
+                    <button class="btn-link" onclick="toggleCookieDetails()">Indietro</button>
+                    <div class="btn-group">
+                        <button class="btn-secondary" onclick="submitFullConsent('denied')">Rifiuta tutti</button>
+                        <button class="btn-primary" onclick="submitCustomConsent()">Salva preferenze</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="sspseo-privacy-trigger" onclick="reopenCookieBanner()" style="display: none;">
+    <svg viewBox="0 0 24 24" class="shield-icon"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+    <span class="trigger-text">Rivedi preferenze</span>
+</div>
+
+<style>
+/* CSS Reset and Variables for encapsulation */
+#sspseo-cookie-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.45); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 9999999; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+#sspseo-cookie-banner { width: 100%; max-width: 580px; background: #fdfcfb; border: 1px solid #d3c4b8; padding: 45px 35px 40px 35px; box-shadow: 0 20px 50px rgba(0,0,0,0.15); font-family: 'Montserrat', sans-serif; box-sizing: border-box; position: relative; }
+#sspseo-cookie-close { position: absolute; top: 12px; right: 16px; background: none !important; border: none; color: #888; font-size: 32px; cursor: pointer; z-index: 2; line-height: 1; }
+.cookie-title { font-size: 20px; font-weight: 700; color: #111; text-transform: uppercase; margin-bottom: 14px; }
+.cookie-text { font-size: 18px; color: #333; line-height: 1.6; margin-bottom: 32px; }
+.cookie-actions { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.btn-group { display: flex; gap: 12px; }
+.btn-link { background: none !important; border: none; color: #444; font-size: 18px; font-weight: 700; cursor: pointer; position: relative; text-decoration: none; }
+.btn-link::after { content: ''; position: absolute; width: 100%; transform: scaleX(0); height: 2px; bottom: 0; left: 0; background-color: #F97316; transform-origin: bottom left; transition: transform 0.25s ease-out; }
+.btn-link:hover::after { transform: scaleX(1); }
+button.btn-primary, button.btn-secondary { padding: 14px 24px; font-size: 18px; font-weight: 700; cursor: pointer; border: none; text-transform: uppercase; color: #F0FDF4 !important; }
+.btn-secondary { background: #E1E1E1; }
+.btn-primary { background: #F97316; }
+.cookie-panel { border-top: 1px solid #e4dfd5; margin: 20px 0; max-height: 300px; overflow-y: auto; }
+.cookie-row { display: flex; justify-content: space-between; align-items: center; padding: 18px 0; border-bottom: 1px solid #f4f1ea; }
+.panel-label { font-size: 16px; font-weight: 700; color: #111; }
+.panel-desc { font-size: 13.5px; color: #555; margin: 0; }
+.status-always { font-size: 22px; font-weight: 700; color: #F97316; }
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #E1E1E1; transition: .3s; border-radius: 24px; }
+.slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: #F97316; }
+input:checked + .slider:before { transform: translateX(20px); }
+#sspseo-privacy-trigger { position: fixed; bottom: 20px; left: 20px; background: #fdfcfb; border: 1px solid #d3c4b8; border-radius: 30px; padding: 10px 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); z-index: 999998; cursor: pointer; display: flex; align-items: center; gap: 8px; max-width: 42px; white-space: nowrap; overflow: hidden; transition: all 0.3s ease; }
+#sspseo-privacy-trigger:hover { max-width: 300px; padding-right: 18px; border-color: #F97316; }
+.shield-icon { width: 20px; height: 20px; margin-left:-4px; fill: #F97316; }
+.trigger-text { font-size: 13px; font-weight: 700; color: #333; text-transform: uppercase; opacity: 0; transition: opacity 0.2s ease; }
+#sspseo-privacy-trigger:hover .trigger-text { opacity: 1; }
+</style>
+
+<script>
+// II. CORE INTERACTION LOGIC
+function generateConsentID() { return 'SSP-' + Math.random().toString(36).substring(2, 11).toUpperCase() + '-' + Date.now(); }
+
+function saveToLegalRegister(consentID, analytics, marketing, personalization) {
+    const payload = new URLSearchParams({
+        action: 'sspseo_save_cookie_consent',
+        consent_id: consentID, analytics, marketing, personalization
+    });
+    fetch(window.location.origin + '/wp-admin/admin-ajax.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: payload
+    }).catch(err => console.error('DB Sync Error:', err));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem('sspseo_privacy_consent') === null) {
+        document.getElementById('sspseo-cookie-overlay').style.display = 'flex';
+    } else {
+        document.getElementById('sspseo-privacy-trigger').style.display = 'flex';
+    }
+});
+
+function reopenCookieBanner() {
+    const localSaved = localStorage.getItem('sspseo_privacy_consent');
+    if (localSaved !== null) {
+        const consentObj = JSON.parse(localSaved);
+        document.getElementById('chk-analytics').checked = (consentObj.analytics === 'granted');
+        document.getElementById('chk-marketing').checked = (consentObj.marketing === 'granted');
+        document.getElementById('chk-customization').checked = (consentObj.personalization === 'granted');
+    }
+    document.getElementById('sspseo-cookie-overlay').style.display = 'flex';
+    document.getElementById('sspseo-privacy-trigger').style.display = 'none';
+}
+
+function toggleCookieDetails() {
+    const main = document.getElementById('cookie-main-view'); 
+    const details = document.getElementById('cookie-details-view');
+    if (main.style.display === 'none') {
+        main.style.display = 'block'; details.style.display = 'none';
+    } else {
+        main.style.display = 'none'; details.style.display = 'block';
+    }
+}
+
+function submitFullConsent(status) {
+    const consentID = generateConsentID();
+    localStorage.setItem('sspseo_privacy_consent', JSON.stringify({ 'consent_id': consentID, 'analytics': status, 'marketing': status, 'personalization': status }));
+    
+    // Core Consent Mode Update Command
+    gtag('consent', 'update', { 'analytics_storage': status, 'ad_storage': status, 'ad_user_data': status, 'ad_personalization': status });
+    
+    handleFontsBlocking(status);
+    saveToLegalRegister(consentID, status, status, status);
+    window.dataLayer.push({ 'event': 'cookie_consent_updated' });
+    document.getElementById('sspseo-cookie-overlay').style.display = 'none';
+    document.getElementById('sspseo-privacy-trigger').style.display = 'flex';
+}
+
+function submitCustomConsent() {
+    const consentID = generateConsentID();
+    const anaStatus = document.getElementById('chk-analytics').checked ? 'granted' : 'denied';
+    const mktStatus = document.getElementById('chk-marketing').checked ? 'granted' : 'denied';
+    const custStatus = document.getElementById('chk-customization').checked ? 'granted' : 'denied';
+    
+    localStorage.setItem('sspseo_privacy_consent', JSON.stringify({ 'consent_id': consentID, 'analytics': anaStatus, 'marketing': mktStatus, 'personalization': custStatus }));
+    
+    gtag('consent', 'update', { 'analytics_storage': anaStatus, 'ad_storage': mktStatus, 'ad_user_data': mktStatus, 'ad_personalization': mktStatus });
+    
+    handleFontsBlocking(custStatus);
+    saveToLegalRegister(consentID, anaStatus, mktStatus, custStatus);
+    window.dataLayer.push({ 'event': 'cookie_consent_updated' });
+    document.getElementById('sspseo-cookie-overlay').style.display = 'none';
+    document.getElementById('sspseo-privacy-trigger').style.display = 'flex';
+}
+</script>
